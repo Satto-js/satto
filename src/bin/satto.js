@@ -112,7 +112,7 @@ if (args[0] === "route") {
 
   let serverContent = fs.readFileSync(serverPath, "utf8");
 
-  const routeEntry = `  { path: "/${routeName}", page: "${routeName}" },\n`;
+  const routeEntry = `  { path: "/${routeName}", page: "${routeName}" },`;
 
   serverContent = serverContent.replace(
     /const routes\s*=\s*\[/,
