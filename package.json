@@ -1,17 +1,18 @@
 {
   "name": "satto",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "description": "A minimal server-rendered web framework for Node.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Satto-js/satto.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "satto",
+    "web-framework",
+    "ssr",
+    "nodejs"
+  ],
+  "author": "joaopedroleonel",
   "license": "MIT",
   "type": "commonjs",
   "bugs": {
