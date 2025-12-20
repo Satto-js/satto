@@ -2,6 +2,7 @@
   "name": "satto",
   "version": "1.0.0",
   "description": "A minimal server-rendered web framework for Node.js",
+  "main": "src/lib/index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Satto-js/satto.git"
@@ -18,5 +19,9 @@
   "bugs": {
     "url": "https://github.com/Satto-js/satto/issues"
   },
-  "homepage": "https://github.com/Satto-js/satto#readme"
+  "homepage": "https://github.com/Satto-js/satto#readme",
+  "dependencies": {
+    "ejs": "^3.1.10",
+    "express": "^5.2.1"
+  }
 }
