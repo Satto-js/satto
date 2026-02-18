@@ -32,7 +32,7 @@ async function renderPage(html, params) {
 
     html = html.replace(/<ssr[^>]*>([\s\S]*?)<\/ssr>/g, (_, content) => {
       return content.replace(
-        /<ssr[^>]*>|<\/ssr>|\{\{\s*([^}]+)\s*\}\}|<for\s+condition="let\s+(\w+)\s+in\s+([\w.]+)"\s*>|<\/for>|<if\s+condition="(.+?)"\s*>|<\/if>|\[(\w+)\]="([^"]+)"/g,
+        /<ssr[^>]*>|<\/ssr>|\{\{\s*([\s\S]*?)\s*\}\}|<for\s+condition="let\s+(\w+)\s+in\s+([\w.]+)"\s*>|<\/for>|<if\s+condition="(.+?)"\s*>|<\/if>|\[(\w+)\]="([^"]+)"/g,
         (match, expr, item, arr, cond, attr, val) => {
           if (match.startsWith("<ssr")) return "";
           if (match === "</ssr>") return "";
