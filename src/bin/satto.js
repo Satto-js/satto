@@ -67,6 +67,9 @@ createServer(__dirname, routes);
   "scripts": {
     "dev": "satto run dev",
     "build": "satto run build"
+  },
+  "overrides": {
+    "minimatch": "10.2.1"
   }
 }`
   };
