@@ -1,6 +1,6 @@
 {
   "name": "satto",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A minimal server-rendered web framework for Node.js",
   "main": "src/lib/index.js",
   "bin": {
@@ -29,6 +29,12 @@
     "express": "^5.2.1"
   },
   "overrides": {
-    "minimatch": "10.2.1"
+    "ejs": {
+      "jake": {
+        "filelist": {
+          "minimatch": "10.2.1"
+        }
+      }
+    }
   }
 }
