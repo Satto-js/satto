@@ -65,39 +65,44 @@ function createServer(__dirname, routes = [], port = 3000) {
   app.use(express.static(path.join(__dirname, "static")));
 
   routes.forEach((route) => {
-    app.get(route.path, (req, res) => {
-      const page = route.page;
-      const htmlPath = path.join(__dirname, "app", page, page + ".html");
-      app.use(express.static(path.join(__dirname, "app", page)));
+    app.get(route.path, async (req, res) => {
+      try {
+        const page = route.page;
+        const htmlPath = path.join(__dirname, "app", page, page + ".html");
+        app.use(express.static(path.join(__dirname, "app", page)));
 
-      fs.readFile(htmlPath, "utf8", async (err, html) => {
-        if (err) {
-          return res.status(404).send();
-        }
+        fs.readFile(htmlPath, "utf8", async (err, html) => {
+          if (err) {
+            return res.status(404).send();
+          }
 
-        const params = { ...req.params };
-        const index = fs.readFileSync(__dirname + "/index.html", "utf8");
+          const params = { ...req.params };
+          const index = fs.readFileSync(__dirname + "/index.html", "utf8");
 
-        const CssPath = path.join(__dirname, "app", page, page + ".css");
-        const JsPath = path.join(__dirname, "app", page, page + ".js");
+          const CssPath = path.join(__dirname, "app", page, page + ".css");
+          const JsPath = path.join(__dirname, "app", page, page + ".js");
 
-        if(hasContent(JsPath)) {
-          html += `\n<script src="./${page}.js?v=${versionApp}"></script>`;
-        }
+          if(hasContent(JsPath)) {
+            html += `\n<script src="./${page}.js?v=${versionApp}"></script>`;
+          }
 
-        html = index.replace("<routes></routes>", html);
-        html = html.replace(`<link rel="stylesheet" href="/styles.css">`, `<link rel="stylesheet" href="/styles.css?v=${versionApp}">`);
+          html = index.replace("<routes></routes>", html);
+          html = html.replace(`<link rel="stylesheet" href="/styles.css">`, `<link rel="stylesheet" href="/styles.css?v=${versionApp}">`);
 
-        if(hasContent(CssPath)) {
-          html = html.replace(
-            "</head>", 
-            `<link rel="stylesheet" href="./${page}.css?v=${versionApp}">
-            </head>`
-          );
-        }
+          if(hasContent(CssPath)) {
+            html = html.replace(
+              "</head>", 
+              `<link rel="stylesheet" href="./${page}.css?v=${versionApp}">
+              </head>`
+            );
+          }
 
-        res.send(await renderPage(html, params));
-      });
+          res.send(await renderPage(html, params));
+        });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send();
+      }
     });
   });
 
