@@ -18,39 +18,65 @@ function applyParams(template, params) {
 }
 
 async function renderPage(html, params) {
-  const match = html.match(/<ssr\s+url="([^"]+)"\s+.*response="([^"]+)"[^>]*>/);
+  try {
+    const match = html.match(/<ssr\s+url="([^"]+)"\s+.*response="([^"]+)"[^>]*>/);
 
-  if(match) {
-    const url = applyParams(match?.[1], params);
-    const resVar = match?.[2];
-    let data = {};
+    if (match) {
+      const url = applyParams(match?.[1], params);
+      const resVar = match?.[2];
+      let data = {};
 
-    if (url) {
-      const res = await fetch(url);
-      data = await res.json();
+      if (url) {
+        const res = await fetch(url);
+        data = await res.json();
+      }
+
+      html = html.replace(/<ssr[^>]*>([\s\S]*?)<\/ssr>/g, (_, content) => {
+        return content.replace(
+          /<ssr[^>]*>|<\/ssr>|\{\{(.*?)\}\}|<for\s+condition="let\s+(.+?)\s+in\s+(.+?)"\s*>|<\/for>|<if\s+condition="(.*?)"\s*>|<\/if>|\[(.+?)\]="(.+?)"/g,
+          (match, expr, item, arr, cond, attr, val) => {
+            if (match.startsWith("<ssr")) return "";
+            if (match === "</ssr>") return "";
+            if (expr) return `<%= ${expr.trim()} %>`;
+            if (item && arr) return `<% ${arr}.forEach(${item} => { %>`;
+            if (match === "</for>") return "<% }) %>";
+            if (cond) return `<% if (${cond}) { %>`;
+            if (match === "</if>") return "<% } %>";
+            if (attr && val) return `${attr}="<%= ${val} %>"`;
+            return match;
+          }
+        );
+      });
+
+      return ejs.render(html, { params, [resVar]: data });
+    } else {
+      return html;
     }
-
-    html = html.replace(/<ssr[^>]*>([\s\S]*?)<\/ssr>/g, (_, content) => {
-      return content.replace(
-        /<ssr[^>]*>|<\/ssr>|\{\{(.*?)\}\}|<for\s+condition="let\s+(.+?)\s+in\s+(.+?)"\s*>|<\/for>|<if\s+condition="(.*?)"\s*>|<\/if>|\[(.+?)\]="(.+?)"/g,
-        (match, expr, item, arr, cond, attr, val) => {
-          if (match.startsWith("<ssr")) return "";
-          if (match === "</ssr>") return "";
-          if (expr) return `<%= ${expr.trim()} %>`;
-          if (item && arr) return `<% ${arr}.forEach(${item} => { %>`;
-          if (match === "</for>") return "<% }) %>";
-          if (cond) return `<% if (${cond}) { %>`;
-          if (match === "</if>") return "<% } %>";
-          if (attr && val) return `${attr}="<%= ${val} %>"`;
-          return match;
-        }
-      );
-    });
-
-    return ejs.render(html, {params, [resVar]: data});
-  } else {
-    return html;
+  } catch (err) {
+    throw err;
   }
+}
+
+function renderErrorPage(code, message) {
+  return `
+    <style>
+      body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: black;
+        color: white;
+        font-family: system-ui, sans-serif;
+      }
+      h1 {
+        font-size: 2rem;
+        font-weight: 400;
+      }
+    </style>
+    <h1>${code} — ${message}</h1>
+  `;
 }
 
 function createServer(__dirname, routes = [], port = 3000) {
@@ -65,15 +91,15 @@ function createServer(__dirname, routes = [], port = 3000) {
   app.use(express.static(path.join(__dirname, "static")));
 
   routes.forEach((route) => {
-    app.get(route.path, async (req, res) => {
-      try {
-        const page = route.page;
-        const htmlPath = path.join(__dirname, "app", page, page + ".html");
-        app.use(express.static(path.join(__dirname, "app", page)));
+    app.get(route.path, (req, res, next) => {
+      const page = route.page;
+      const htmlPath = path.join(__dirname, "app", page, page + ".html");
+      app.use(express.static(path.join(__dirname, "app", page)));
 
-        fs.readFile(htmlPath, "utf8", async (err, html) => {
+      fs.readFile(htmlPath, "utf8", async (err, html) => {
+        try {
           if (err) {
-            return res.status(404).send();
+            return next();
           }
 
           const params = { ...req.params };
@@ -82,28 +108,36 @@ function createServer(__dirname, routes = [], port = 3000) {
           const CssPath = path.join(__dirname, "app", page, page + ".css");
           const JsPath = path.join(__dirname, "app", page, page + ".js");
 
-          if(hasContent(JsPath)) {
+          if (hasContent(JsPath)) {
             html += `\n<script src="./${page}.js?v=${versionApp}"></script>`;
           }
 
           html = index.replace("<routes></routes>", html);
           html = html.replace(`<link rel="stylesheet" href="/styles.css">`, `<link rel="stylesheet" href="/styles.css?v=${versionApp}">`);
 
-          if(hasContent(CssPath)) {
+          if (hasContent(CssPath)) {
             html = html.replace(
-              "</head>", 
+              "</head>",
               `<link rel="stylesheet" href="./${page}.css?v=${versionApp}">
-              </head>`
+                </head>`
             );
           }
 
           res.send(await renderPage(html, params));
-        });
-      } catch (err) {
-        console.error(err);
-        res.status(500).send();
-      }
+        } catch (err) {
+          next(err);
+        }
+      });
     });
+  });
+
+  app.use((req, res) => {
+    res.status(404).send(renderErrorPage(404, "Page Not Found"));
+  });
+
+  app.use((err, req, res, next) => {
+    console.error(err);
+    res.status(500).send(renderErrorPage(500, "Internal Server Error"));
   });
 
   app.listen(port, () => {
