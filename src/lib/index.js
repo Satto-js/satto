@@ -64,12 +64,10 @@ function createServer(__dirname, routes = [], port = 3000) {
   app.set("views", path.join(__dirname, "app"));
   app.engine("html", ejs.renderFile);
   app.set("view engine", "html");
-
-  app.use(express.static(path.join(__dirname, "app")));
   app.use(express.static(path.join(__dirname, "static")));
 
   routes.forEach((route) => {
-    app.get(route.path, (req, res, next) => {
+    app.get(route.path, (req, res) => {
       const page = route.page;
       const htmlPath = path.join(__dirname, "app", page, page + ".html");
       app.use(express.static(path.join(__dirname, "app", page)));
