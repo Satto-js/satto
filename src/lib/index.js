@@ -57,6 +57,28 @@ async function renderPage(html, params) {
   }
 }
 
+function renderErrorPage(code, message) {
+  return `
+    <style>
+      body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: black;
+        color: white;
+        font-family: system-ui, sans-serif;
+      }
+      h1 {
+        font-size: 2rem;
+        font-weight: 400;
+      }
+    </style>
+    <h1>${code} — ${message}</h1>
+  `;
+}
+
 function createServer(__dirname, routes = [], port = 3000) {
   const versionApp = Date.now();
   const app = express();
@@ -67,15 +89,19 @@ function createServer(__dirname, routes = [], port = 3000) {
   app.use(express.static(path.join(__dirname, "static")));
 
   routes.forEach((route) => {
-    app.get(route.path, (req, res) => {
+    app.use(express.static(path.join(__dirname, "app", route.page)));
+    app.get(route.path, (req, res, next) => {
+      if(req.path.includes('.')){
+        return next();
+      }
+
       const page = route.page;
       const htmlPath = path.join(__dirname, "app", page, page + ".html");
-      app.use(express.static(path.join(__dirname, "app", page)));
 
       fs.readFile(htmlPath, "utf8", async (err, html) => {
         try {
           if (err) {
-            res.status(404).send();
+            return next();
           }
 
           const params = { ...req.params };
@@ -102,10 +128,19 @@ function createServer(__dirname, routes = [], port = 3000) {
           res.send(await renderPage(html, params));
         } catch (err) {
           console.error(err);
-          res.status(500).send();
+          next(err);
         }
       });
     });
+  });
+
+  app.use((req, res) => {
+    res.status(404).send(renderErrorPage(404, "Page Not Found"));
+  });
+
+  app.use((err, req, res, next) => {
+    console.error(err);
+    res.status(500).send(renderErrorPage(500, "Internal Server Error"));
   });
 
   app.listen(port, () => {
