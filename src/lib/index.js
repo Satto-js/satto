@@ -127,7 +127,6 @@ function createServer(__dirname, routes = [], port = 3000) {
 
           res.send(await renderPage(html, params));
         } catch (err) {
-          console.error(err);
           next(err);
         }
       });
@@ -140,6 +139,13 @@ function createServer(__dirname, routes = [], port = 3000) {
 
   app.use((err, req, res, next) => {
     console.error(err);
+
+    const isFetchError = err.message?.includes('fetch failed') || err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND';
+
+    if (isFetchError) {
+      return res.status(404).send(renderErrorPage(404, "Page Not Found"));
+    }
+
     res.status(500).send(renderErrorPage(500, "Internal Server Error"));
   });
 

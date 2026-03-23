@@ -69,7 +69,7 @@ createServer(__dirname, routes);
     "build": "satto run build"
   },
   "overrides": {
-    "minimatch": "10.2.1"
+    "minimatch": "10.2.4"
   }
 }`
   };
